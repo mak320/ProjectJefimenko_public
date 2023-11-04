@@ -12,7 +12,7 @@ import numpy as np
 def E_x(x, y, z, t):
     """can be set to any arbitrary function in 'normal' python convention - array magic does not happen here,
     but in ext_field"""
-    return 0.0
+    return 1.0
 
 
 def E_y(x, y, z, t):
@@ -20,7 +20,7 @@ def E_y(x, y, z, t):
 
 
 def E_z(x, y, z, t):
-    return 1
+    return 0
 
 
 def B_x(x, y, z, t):
