@@ -204,6 +204,8 @@ class SimClass:
         v_DOT_F = vx * Fx + vy * Fy + vz * Fz
         gamma_loc = gamma(v_vec, self.c)
 
+        """Construct relativistic accelerations from force, using inner products"""
+
         ax = (Fx - v_DOT_F * vx / self.c ** 2) / (gamma_loc * self.mass)
         ay = (Fy - v_DOT_F * vy / self.c ** 2) / (gamma_loc * self.mass)
         az = (Fz - v_DOT_F * vz / self.c ** 2) / (gamma_loc * self.mass)
@@ -247,6 +249,8 @@ class SimClass:
         formats it as such
         """
 
+        """Used to unpack present variables into correctly vectorized and formatted arrays"""
+
         sx = s[:, 0:1]
         sx = np.repeat(sx, self.NParticles, axis=1)
         sx = np.expand_dims(sx, axis=0)
@@ -278,6 +282,18 @@ class SimClass:
         return s_past
 
     def generate_past(self):
+        """
+        Creates a past of kinematic variables such that the system
+        is propagated FORWARD from time self.NP*self.dt to -self.dt, at which point it terminates and
+        proper, interacting integration can begin.
+        The equations of motions for this integration cycle is ONLY using the external fields, i.e. the particles
+        are non-interacting in this regime.
+        :return: N/A. Sets self.past variables in accordance with a non-interacting Lorentz Force.
+        """
+
+        """
+        Create integration regime times.
+        """
 
         past_time = np.linspace(-self.NP * self.dt, -self.dt, self.NP)
         sim_time = np.linspace(0, self.T - self.dt, self.NT)
@@ -292,6 +308,8 @@ class SimClass:
         self.past_time = past_time
 
         self.sim_time = sim_time
+
+        """Vectorize and initalize past kinematic baribles"""
 
         self.rx_tot = self.r[:, 0:1]
         self.ry_tot = self.r[:, 1:2]
@@ -344,6 +362,10 @@ class SimClass:
             F_vec = np.hstack((Fx, Fy, Fz))
 
             return F_vec
+
+        """Integration time loop, using RK2, 
+        used to integrate to to the starting,
+        location of teh integration time loop"""
 
         for n in tqdm(range(self.NP)):
             Fn = NonInteractingLorentzForce(
@@ -478,6 +500,10 @@ class SimClass:
         closest_IDs_ay = past_ay[closest_IDs[:], index_x, index_y]
         closest_IDs_az = past_az[closest_IDs[:], index_x, index_y]
 
+
+        """
+        Repeat selection of past kinematic variables for neighboring variables, for future interpolation.
+        """
         IDs_time = scan_time_regime[closest_IDs[:], index_x, index_y]
 
         neighbour_IDs_rx = past_rx[neighbour_IDs[:], index_x, index_y]
@@ -500,6 +526,8 @@ class SimClass:
 
         plus_minus = -np.sign(Omega[closest_IDs[:], index_x, index_y])
 
+        """For dedicated derivation of this formulae, see paper draft."""
+
         R_dot_wB = plus_minus / self.dt * ((current_rx[0] - closest_IDs_rx) * (neighbour_IDs_rx - closest_IDs_rx) +
                                            (current_ry[0] - closest_IDs_ry) * (neighbour_IDs_ry - closest_IDs_ry) +
                                            (current_rz[0] - closest_IDs_rz) * (neighbour_IDs_rz - closest_IDs_rz))
@@ -510,8 +538,12 @@ class SimClass:
 
         denom_interp = 2 * (R_dot_wB - self.c ** 2 * time_diff)
 
+        """Remove numerical artefacts"""
+
         dt_order_interp_quant = numer_interp * np.divide(1.0, denom_interp, out=np.zeros_like(denom_interp),
                                                          where=denom_interp != 0.0)  # should be order h = order dt
+
+        """This variable can further be used to check for numerical instability."""
 
         interp_correction = dt_order_interp_quant * \
             plus_minus / self.dt  # should be order 1
@@ -539,9 +571,18 @@ class SimClass:
 
         self.deepest_scan = min(np.amin(closest_IDs), self.rx_tot.shape[1] - 3)
 
+        """"""
+
         return ret_rx, ret_ry, ret_rz, ret_ux, ret_uy, ret_uz, ret_ax, ret_ay, ret_az
 
     def get_ret_kin_variables_while(self, r, j, alpha):
+        """
+        This function outputs the same variables as the get_ret_kin_variables, but at considerably higher efficiency.
+        :param r: Current position of particles: (N,3) shaped
+        :param j: Current index of time
+        :param alpha: Current sub-index of time: modifies actual calling time st. it adds +alpha*dt
+        :return: Correct, interpolated kinematic variables
+        """
 
         current_time = self.sim_time[j] + alpha * self.dt
 
@@ -557,6 +598,8 @@ class SimClass:
         ret_ax_arr = np.zeros((self.NParticles, self.NParticles))
         ret_ay_arr = np.zeros((self.NParticles, self.NParticles))
         ret_az_arr = np.zeros((self.NParticles, self.NParticles))
+
+        """This part can be reformatted to higher efficiency, by possibly vectorising it"""
 
         for A in range(self.NParticles):
             for B in range(self.NParticles):
@@ -583,7 +626,13 @@ class SimClass:
 
                         return spatial - temporal
 
-                    causal_filter = 1
+
+
+                    """
+                    Cycle through casual quantities, 
+                    until we find a smaller (more physical) one than the previously evaluated one, 
+                    starting with the previous index. Only requires a few cycles of while loops typically.
+                    """
 
                     closest_ID = mID
 
@@ -615,6 +664,11 @@ class SimClass:
 
                     self.min_IDs[A, B] = max(min(id0, id1), 0)
 
+
+                    """
+                    Repeat same interpolation method, using the 'closest' quantity 
+                    and the correctly identified neighbor ID.
+                    """
                     closest_IDs_rx = self.rx_tot[B, id0]
                     closest_IDs_ry = self.ry_tot[B, id0]
                     closest_IDs_rz = self.rz_tot[B, id0]
@@ -663,6 +717,10 @@ class SimClass:
                     dt_order_interp_quant = numer_interp * np.divide(1.0, denom_interp, out=np.zeros_like(denom_interp),
                                                                      where=denom_interp != 0.0)  # should be order h = order dt
 
+                    """
+                    Use same linear interpolation method. 
+                    """
+
                     interp_correction = dt_order_interp_quant * \
                         plus_minus / self.dt  # should be order 1
 
@@ -702,8 +760,6 @@ class SimClass:
         return ret_rx_arr, ret_ry_arr, ret_rz_arr, \
             ret_ux_arr, ret_uy_arr, ret_uz_arr, \
             ret_ax_arr, ret_ay_arr, ret_az_arr
-
-    """Regen Get_force resze"""
 
     def EM_fields(self, r, j, alpha):
         """
@@ -1054,6 +1110,7 @@ class SimClass:
                 self.AppendCycleStep()
 
     def run_simulation(self):
+        """Just executes both intergation regimes"""
         self.generate_past()
         self.p_cycleRK2()
 
