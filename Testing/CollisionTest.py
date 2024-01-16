@@ -4,6 +4,10 @@
     This file is used to test the collision mechnism. 
 """
 
+import sys
+
+sys.path.append('../ProjectJefimenko_public')
+
 from NbodySimEM import *
 
 """Test case"""
