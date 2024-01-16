@@ -6,6 +6,12 @@ import numpy as np
 from NbodySimEM import SimClass
 from scipy.optimize import curve_fit
 
+import sys
+
+sys.path.append('../ProjectJefimenko_public')
+
+from NbodySimEM import *
+
 q1 = 1
 q2 = 1
 
