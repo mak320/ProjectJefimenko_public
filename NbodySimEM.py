@@ -1165,6 +1165,3 @@ class SimClass:
 
         if show:
             self.fig.show()
-
-
-
