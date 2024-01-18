@@ -77,11 +77,6 @@ def F2a(u, F, c, mass):
     a_vec = np.hstack((ax, ay, az))
     return a_vec
 
-F = np.ones((10,3))
-U = np.ones((10,3))
-m = np.ones((10, 1))
-
-print(F2a(U,F,100,m))
 
 
 
