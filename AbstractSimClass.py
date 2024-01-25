@@ -37,7 +37,7 @@ class Field:
         :param c (float): speed of information propagation ('speed of light')
         :param mass  (array, shape = (N, 1)): Mass array
         :param forcefields: dictionary. Stores forcefield names and equation(s) in the form of (u)functions, which must at least have 
-        inputs of pos, mom, retpos, retmom, filter and might call kwargs. 
+        inputs of pos, mom, retpos, retveloc, retacc and might call kwargs. 
         
         """
         self.c = c
@@ -52,6 +52,7 @@ class Field:
             return ufunc(pos,mom,retpos,retveloc,retacc,*args_declaration)
         
         self.forcefields[name] = lfunc
+        self.interaction_constants.append(args_declaration)
         
 
 
