@@ -1,6 +1,16 @@
 import numpy as np
+import numba as nb
+
 from HelperFunctions import *
 
+@nb.njit()
+def normaliser(A):
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            if not(np.isfinite(A[i, j])):
+                A[i, j] = 0.0
+    return A
+    
 @nb.njit()
 def CoulumbField(pos, mom, retpos, retveloc, retacc, charge, k):
 
@@ -13,10 +23,8 @@ def CoulumbField(pos, mom, retpos, retveloc, retacc, charge, k):
 
     invr3 = 1/r3
 
-    for val in np.nditer(invr3):
-        if np.isfinite(val) == False:
-            val = 0.0
-
+    invr3 = normaliser(invr3)
+    
     Fx = (k * dx * invr3 @ charge) * charge
     Fy = (k * dy * invr3 @ charge) * charge
     Fz = (k * dz * invr3 @ charge) * charge
@@ -80,10 +88,7 @@ test = Field(mass, 1.0)
 test.append_forcefield(CoulumbField,[charge,2.0],'Coulomb')
 
 pos = np.random.randn(4,3)
-rpos = np.random.randn(4,3)
+rpos = pos
 
 print(test.forcefields['Coulomb'](pos,pos,rpos,rpos,rpos))
 test.construct_forcefield()
-test.callable_forcefield(pos,pos,rpos,rpos,rpos)
-        
-        
