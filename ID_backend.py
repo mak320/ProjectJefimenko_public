@@ -5,7 +5,7 @@ import numba as nb
 
 
 @nb.njit(fastmath=True, cache=True, parallel=True)
-def ID_backend(r_current, r_past, previos_deepest_ID, dt, c):
+def ID_backend(r_current, r_past, previos_deepest_ID, dt, c, alpha= 0.0):
     """This function generates an array that serves to index the kinemtic variables"""
     # rc == array shape - (3, N_obs, 1)
     # rp == array shape - (3, N_source, N_past_time)
@@ -27,7 +27,7 @@ def ID_backend(r_current, r_past, previos_deepest_ID, dt, c):
 
                 spatial_sep = np.linalg.norm(r_current[i, :, 0]-r_past[j, :, t_idx])
 
-                temporal_sep = dt*c*t_idx
+                temporal_sep = dt*c*t_idx + alpha*dt
                 omega = spatial_sep - temporal_sep
 
                 if np.sign(omega) != np.sign(prev_omega):
@@ -36,6 +36,13 @@ def ID_backend(r_current, r_past, previos_deepest_ID, dt, c):
                     interp_slope_sign[i, j] = np.sign(np.abs(omega) - np.abs(prev_omega) + numerical_delta)
 
                     break
+
+                """
+                IDs_array_negative[i, j] = t_idx + 1
+                IDs_array_positive[i, j] = t_idx
+                interp_slope_sign[i, j] = np.sign(np.abs(omega) - np.abs(prev_omega) + numerical_delta)
+                """
+                
                 prev_omega = omega
 
     return IDs_array_negative, IDs_array_positive, interp_slope_sign
