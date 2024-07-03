@@ -72,7 +72,6 @@ ID_neg = np.ones((20, 10), dtype=np.uint32)
 
 ID_sign = np.ones((20, 10), dtype=np.uint32)
 
-
 Nobs = 20 
 
 r_curr = np.random.randn(Nobs*3).reshape(3, Nobs, 1)

@@ -27,7 +27,7 @@ def ID_backend(r_current, r_past, previos_deepest_ID, dt, c, alpha= 0.0):
 
                 spatial_sep = np.linalg.norm(r_current[i, :, 0]-r_past[j, :, t_idx])
 
-                temporal_sep = dt*c*t_idx + alpha*dt
+                temporal_sep = dt*c*t_idx + alpha*dt*c
                 omega = spatial_sep - temporal_sep
 
                 if np.sign(omega) != np.sign(prev_omega):
